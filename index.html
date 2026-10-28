@@ -1,0 +1,1311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Test Data Sheet Builder</title>
+<meta name="description" content="Build a ready-to-use test marking spreadsheet: data entry, student feedback tabs, summary with grades and peer-marking sheets.">
+<style>html,body{margin:0} img{max-width:100%} [hidden]{display:none!important}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a deep "playing field" hero with a colour-scaled results grid, then numbered setup cards on the left
+   and a sticky scoreboard + Excel-window preview on the right; one column on phones. */
+:root {
+  --bg: #eef2ef;
+  --grid-line: rgba(20, 60, 42, .06);
+  --surface: #ffffff;
+  --ink: #102019;
+  --muted: #56655e;
+  --line: #d3ddd7;
+  --line-strong: #102019;
+  --field: #0c3b2a;          /* hero / scoreboard */
+  --field-2: #124d37;
+  --field-ink: #f2f7f3;
+  --field-muted: #a9c4b6;
+  --accent: #17804f;
+  --accent-ink: #ffffff;
+  --accent-soft: #dff0e6;
+  --chip: #edf2ef;
+  --scale-lo: #f8696b; --scale-mid: #ffeb84; --scale-hi: #63be7b;   /* Excel colour scale */
+  --good-bg: #c6efce; --good-fg: #0b5a1d;
+  --bad-bg: #ffd9dd;  --bad-fg: #9c0006;
+  --xl-head: #f3f3f3; --xl-grid: #d4d4d4; --xl-ink: #1b1b1b; --xl-sel: #217346;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --r: 14px;
+  --shadow: 0 1px 0 rgba(16, 32, 25, .04), 0 10px 30px -18px rgba(12, 59, 42, .35);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0d1411; --grid-line: rgba(160, 220, 190, .045); --surface: #16201b; --ink: #e5ede8; --muted: #98aaa1;
+  --line: #2a3832; --line-strong: #c8d6ce; --field: #0a2a1e; --field-2: #0f3a29; --field-ink: #eef6f1; --field-muted: #94b5a4;
+  --accent: #46c088; --accent-ink: #06140e; --accent-soft: #183327; --chip: #1f2a25;
+  --good-bg: #1f4a2c; --good-fg: #b9f0c6; --bad-bg: #4d1f25; --bad-fg: #ffc2c9;
+  --xl-head: #2a2f2c; --xl-grid: #3b423e; --xl-ink: #e6e6e6; --xl-sel: #46c088;
+  --shadow: 0 1px 0 rgba(0,0,0,.3), 0 14px 34px -20px rgba(0,0,0,.8); color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0d1411; --grid-line: rgba(160, 220, 190, .045); --surface: #16201b; --ink: #e5ede8; --muted: #98aaa1;
+  --line: #2a3832; --line-strong: #c8d6ce; --field: #0a2a1e; --field-2: #0f3a29; --field-ink: #eef6f1; --field-muted: #94b5a4;
+  --accent: #46c088; --accent-ink: #06140e; --accent-soft: #183327; --chip: #1f2a25;
+  --good-bg: #1f4a2c; --good-fg: #b9f0c6; --bad-bg: #4d1f25; --bad-fg: #ffc2c9;
+  --xl-head: #2a2f2c; --xl-grid: #3b423e; --xl-ink: #e6e6e6; --xl-sel: #46c088;
+  --shadow: 0 1px 0 rgba(0,0,0,.3), 0 14px 34px -20px rgba(0,0,0,.8); color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body {
+  background-color: var(--bg); color: var(--ink); font: 16px/1.55 var(--body);
+  background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 64px 22px;
+}
+.gutter { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.inner { max-width: 1180px; margin: 0 auto; }
+
+/* ---------- hero ---------- */
+.hero { background: radial-gradient(120% 140% at 85% 0%, var(--field-2) 0%, var(--field) 60%); color: var(--field-ink); position: relative; overflow: hidden; }
+.hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 6px;
+  background: linear-gradient(90deg, var(--scale-lo), var(--scale-mid) 50%, var(--scale-hi)); }
+.hero .inner { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 40px; align-items: center; padding-block: 44px 54px; }
+@media (max-width: 900px) { .hero .inner { grid-template-columns: minmax(0, 1fr); gap: 28px; padding-block: 32px 40px; } }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--scale-mid); display: inline-flex; gap: 10px; align-items: center; }
+.eyebrow::before { content: ""; width: 26px; height: 2px; background: currentColor; }
+h1 { font: 800 clamp(36px, 5.6vw, 64px)/.98 var(--display); margin: 14px 0 0; letter-spacing: -.025em; text-wrap: balance; font-variation-settings: "opsz" 96; }
+h1 em { font-style: normal; color: var(--scale-hi); }
+.lede { margin: 18px 0 0; max-width: 54ch; color: var(--field-muted); font-size: 17px; }
+.hero-points { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 0; padding: 0; list-style: none; }
+.hero-points li { font-size: 14px; padding: 6px 12px; border: 1px solid rgba(255,255,255,.18); border-radius: 999px; background: rgba(255,255,255,.05); }
+
+/* colour-scaled mock sheet */
+.mock { background: #fbfcfb; border-radius: 12px; box-shadow: 0 30px 60px -30px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.08); overflow: hidden; color: #1b1b1b; transform: rotate(-1.2deg); max-width: 100%; }
+.mock-bar { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: #217346; color: #fff; font: 600 12px var(--body); }
+.mock-bar i { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.45); }
+.mock-bar span { margin-left: 6px; }
+.mock-grid { display: grid; grid-template-columns: 34px repeat(var(--cols), minmax(0, 1fr)); font: 500 12px/1 var(--mono); font-variant-numeric: tabular-nums; }
+.mock-grid div { border-right: 1px solid #dcdcdc; border-bottom: 1px solid #dcdcdc; padding: 7px 0; text-align: center; }
+.mock-grid .h { background: #f0f0f0; color: #555; font-weight: 500; }
+.mock-grid .rh { background: #f0f0f0; color: #555; }
+.mock-grid .c { color: #1b1b1b; }
+.mock-tabs { display: flex; gap: 2px; padding: 0 8px; background: #f0f0f0; border-top: 1px solid #dcdcdc; font: 500 11.5px/1 var(--body); overflow: hidden; }
+.mock-tabs span { padding: 7px 10px; color: #444; white-space: nowrap; }
+.mock-tabs span.on { background: #fff; color: #217346; font-weight: 700; box-shadow: inset 0 -2px #217346; }
+@media (prefers-reduced-motion: no-preference) {
+  .mock .c { animation: pop .5s both; animation-delay: calc(var(--i) * 18ms + 150ms); }
+  @keyframes pop { from { background-color: #fbfcfb; } }
+}
+
+/* ---------- main layout ---------- */
+main.inner { padding-block: 34px 64px; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 390px; gap: 28px; align-items: start; }
+@media (max-width: 980px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+.steps { display: grid; gap: 20px; min-width: 0; counter-reset: s; }
+.step { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 24px 24px 26px; display: grid; gap: 18px; min-width: 0; box-shadow: var(--shadow); position: relative; }
+.step-head { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: start; }
+.num { width: 44px; height: 44px; border-radius: 12px; background: var(--field); color: var(--field-ink); display: grid; place-items: center;
+  font: 800 20px/1 var(--display); font-variant-numeric: tabular-nums; position: relative; }
+.step.done .num { background: var(--accent); color: var(--accent-ink); }
+.step.done .num::after { content: "✓"; position: absolute; right: -6px; bottom: -6px; width: 20px; height: 20px; border-radius: 50%; background: var(--surface); color: var(--accent);
+  border: 2px solid var(--accent); font: 800 11px/16px var(--body); text-align: center; }
+.step h2 { font: 700 23px/1.15 var(--display); margin: 2px 0 4px; letter-spacing: -.01em; }
+.step-head p { margin: 0; color: var(--muted); font-size: 15px; max-width: 60ch; }
+
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px 20px; }
+label.f, .flabel { display: grid; gap: 7px; font-weight: 700; font-size: 14px; }
+label.f small, .hint { font-weight: 400; color: var(--muted); font-size: 13.5px; }
+input[type=text], input[type=number], textarea {
+  font: 16px/1.4 var(--body); color: var(--ink); background: var(--surface);
+  border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 12px; width: 100%; min-width: 0; }
+input[type=text]:hover, input[type=number]:hover, textarea:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+textarea { font-family: var(--mono); font-size: 14px; min-height: 120px; resize: vertical;
+  background-image: linear-gradient(var(--grid-line) 1px, transparent 1px); background-size: 100% 22px; background-position: 0 9px; line-height: 22px; }
+input:focus-visible, textarea:focus-visible, button:focus-visible, .chk input:focus-visible, summary:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 40%, transparent); outline-offset: 1px; border-color: var(--accent); }
+
+.stepper { display: flex; align-items: stretch; width: max-content; max-width: 100%; border-radius: 12px; overflow: hidden; border: 1.5px solid var(--line); background: var(--surface); }
+.stepper input { width: 84px; text-align: center; border: 0; border-radius: 0; font: 800 22px/1 var(--display); font-variant-numeric: tabular-nums; padding: 8px 4px; }
+.stepper input:focus-visible { outline-offset: -3px; }
+.stepper button { width: 46px; border: 0; background: var(--chip); color: var(--ink); font: 700 22px/1 var(--body); cursor: pointer; }
+.stepper button:hover { background: var(--accent); color: var(--accent-ink); }
+
+.chk { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; cursor: pointer; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); }
+.chk:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); }
+.chk:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.chk:has(input:disabled) { opacity: .55; cursor: not-allowed; }
+.chk input { width: 18px; height: 18px; margin: 3px 0 0; accent-color: var(--accent); flex: none; }
+.chk span { font-weight: 700; }
+.chk span small { display: block; color: var(--muted); font-size: 13.5px; font-weight: 400; }
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+
+.btn { font: 700 15px/1 var(--body); border-radius: 10px; padding: 11px 16px; cursor: pointer; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); }
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.small { padding: 9px 12px; font-size: 14px; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.08); color: var(--accent-ink); }
+.btn.big { width: 100%; padding: 17px 16px; font: 800 18px/1 var(--display); display: flex; justify-content: center; align-items: center; gap: 10px; border-radius: 12px; }
+.btn.big svg { width: 20px; height: 20px; }
+.btn:disabled { opacity: .45; cursor: not-allowed; filter: grayscale(.6); }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+/* question table */
+.tbl-wrap { overflow-x: auto; border: 1.5px solid var(--line); border-radius: 12px; }
+table.q { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+table.q th { font: 500 11.5px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); text-align: left; padding: 11px 12px; background: var(--chip); border-bottom: 1.5px solid var(--line); }
+table.q td { padding: 6px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+table.q tbody tr:hover td { background: color-mix(in srgb, var(--accent-soft) 50%, transparent); }
+table.q tr:last-child td { border-bottom: 0; }
+table.q td.idx { font: 500 13px var(--mono); color: var(--muted); width: 1%; white-space: nowrap; }
+table.q input { padding: 7px 9px; }
+table.q input.mk { width: 82px; text-align: center; font-weight: 700; }
+table.q input.lb { width: 130px; font-family: var(--mono); }
+table.q .bar { display: block; height: 6px; border-radius: 3px; background: var(--accent); opacity: .55; min-width: 4px; }
+table.q td.w { width: 38%; }
+table.q .tag { font: 500 11px/1 var(--mono); letter-spacing: .05em; padding: 5px 8px; border-radius: 6px; background: var(--field); color: var(--field-ink); }
+table.q .mcm { font: 800 17px var(--display); padding-left: 10px; }
+.xbtn { border: 0; background: none; color: var(--muted); font-size: 20px; cursor: pointer; padding: 2px 8px; border-radius: 8px; }
+.xbtn:hover { color: var(--bad-fg); background: var(--bad-bg); }
+.totline { display: flex; align-items: baseline; gap: 10px; font-size: 15px; color: var(--muted); }
+.totline b { font: 800 30px/1 var(--display); color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* codes & grades */
+.codes { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.code { display: grid; grid-template-columns: 52px 1fr auto; gap: 8px; align-items: center; }
+.code input.c { text-align: center; font: 700 18px var(--mono); text-transform: uppercase; padding: 8px 4px; background: var(--bad-bg); color: var(--bad-fg); border-color: transparent; }
+.fullcode { text-align: center; font: 700 20px var(--mono) !important; text-transform: uppercase; width: 92px !important; background: var(--good-bg) !important; color: var(--good-fg) !important; border-color: transparent !important; }
+.grades { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px 12px; }
+.g { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; align-items: center; }
+.g input { padding: 7px 6px; text-align: center; font-variant-numeric: tabular-nums; }
+.g input:nth-child(2) { font-weight: 700; }
+.scale { height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--scale-lo), var(--scale-mid) 50%, var(--scale-hi)); }
+.subhead { font: 700 17px/1.2 var(--display); margin: 8px 0 -6px; }
+details.more { border: 1.5px dashed var(--line); border-radius: 12px; padding: 12px 14px; }
+details.more summary { cursor: pointer; font-weight: 700; color: var(--accent); }
+details.more[open] summary { margin-bottom: 14px; }
+
+/* ---------- scoreboard ---------- */
+aside { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); display: grid; gap: 18px; min-width: 0; }
+@media (max-width: 980px) { aside { position: static; } }
+.board { background: var(--field); color: var(--field-ink); border-radius: var(--r); padding: 22px; display: grid; gap: 16px; min-width: 0; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+.board::before { content: ""; position: absolute; inset: 0 0 auto; height: 4px; background: linear-gradient(90deg, var(--scale-lo), var(--scale-mid) 50%, var(--scale-hi)); }
+.board h3 { font: 700 13px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--field-muted); margin: 0; }
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border: 1px solid rgba(255,255,255,.14); border-radius: 12px; overflow: hidden; }
+.fact { padding: 12px 12px 10px; display: grid; gap: 4px; }
+.fact + .fact { border-left: 1px solid rgba(255,255,255,.14); }
+.fact b { font: 800 34px/1 var(--display); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.fact span { font-size: 12.5px; color: var(--field-muted); }
+.checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14.5px; }
+.checklist li { display: flex; gap: 10px; align-items: center; color: var(--field-muted); }
+.checklist li::before { content: ""; width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255,255,255,.3); flex: none; }
+.checklist li.ok { color: var(--field-ink); }
+.checklist li.ok::before { background: var(--scale-hi) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='%230c3b2a' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/14px no-repeat; border-color: var(--scale-hi); }
+.board .btn.primary { background: var(--scale-hi); border-color: var(--scale-hi); color: #062016; }
+.board .btn.primary:hover { filter: brightness(1.08); color: #062016; }
+.board .btn.small { background: transparent; color: var(--field-ink); border-color: rgba(255,255,255,.25); }
+.board .btn.small:hover { border-color: var(--field-ink); color: var(--field-ink); }
+.status { font-size: 14px; min-height: 1.4em; margin: -4px 0 0; color: var(--field-muted); }
+.status.ok { color: var(--scale-hi); font-weight: 700; }
+.status.err { color: #ffb3b5; font-weight: 700; }
+.issues { margin: 0; padding: 10px 12px 10px 28px; color: #ffd0d1; font-size: 14px; background: rgba(248,105,107,.14); border-radius: 10px; border: 1px solid rgba(248,105,107,.35); }
+
+/* Excel window preview */
+.xl { background: var(--surface); border-radius: var(--r); overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--line); min-width: 0; }
+.xl-title { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #217346; color: #fff; font: 700 13px/1.2 var(--body); }
+.xl-title svg { width: 18px; height: 18px; flex: none; }
+.xl-title span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.xl-body { overflow-x: auto; background: var(--surface); }
+.xl table { border-collapse: collapse; width: 100%; font: 12.5px/1.25 var(--body); font-variant-numeric: tabular-nums; color: var(--xl-ink); }
+.xl th.cl, .xl td.rn { background: var(--xl-head); color: var(--muted); font: 500 10.5px/1 var(--mono); border: 1px solid var(--xl-grid); padding: 4px 4px; text-align: center; font-weight: 400; }
+.xl td.rn { width: 24px; }
+.xl td { border: 1px solid var(--xl-grid); padding: 6px 6px; text-align: center; }
+.xl td.cell-b { border: 1.5px solid var(--xl-ink); }
+.xl tr.hdr td { font-weight: 700; }
+.xl tr.top td { font-weight: 700; text-align: left; border-color: var(--xl-grid); }
+.xl td.fb { font-family: var(--mono); }
+.xl td.y { background: var(--good-bg); color: var(--good-fg); }
+.xl td.cm { width: 34%; }
+.xl tr.more td { color: var(--muted); font-style: italic; }
+.xl-tabs { display: flex; gap: 2px; padding: 0 6px; background: var(--xl-head); border-top: 1px solid var(--xl-grid); font: 500 12px/1 var(--body); overflow-x: auto; }
+.xl-tabs span { padding: 8px 10px; color: var(--muted); white-space: nowrap; }
+.xl-tabs span.on { background: var(--surface); color: var(--xl-sel); font-weight: 700; box-shadow: inset 0 -2px var(--xl-sel); }
+.xl-note { margin: 0; padding: 10px 14px 12px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); }
+
+/* ---------- guide ---------- */
+.guide { margin-top: 40px; display: grid; gap: 20px; }
+.guide h2 { font: 800 clamp(24px, 3vw, 32px)/1.1 var(--display); margin: 0; letter-spacing: -.015em; }
+.guide-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; counter-reset: g; }
+.guide-steps li { counter-increment: g; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px 18px 20px; display: grid; gap: 6px; align-content: start; box-shadow: var(--shadow); font-size: 15px; }
+.guide-steps li::before { content: counter(g, decimal-leading-zero); font: 800 28px/1 var(--display); color: var(--accent); }
+.guide-steps b.t { font: 700 17px/1.2 var(--display); }
+.guide code, .step code, .board code { font: 500 .92em var(--mono); background: var(--chip); padding: 1px 6px; border-radius: 5px; }
+.example { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+.ex { border: 1.5px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 6px; font-size: 14px; background: var(--surface); }
+.ex code { font: 700 18px var(--mono); justify-self: start; padding: 4px 10px; border-radius: 6px; background: var(--bad-bg); color: var(--bad-fg); }
+.ex.full code { background: var(--good-bg); color: var(--good-fg); }
+.ex.blank code { background: var(--chip); color: var(--muted); }
+.ex b { font: 800 22px/1 var(--display); }
+.foot { margin-top: 30px; color: var(--muted); font-size: 13.5px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .btn, .stepper button, .xbtn, .chk, input, .num { transition: background-color .15s, filter .15s, border-color .15s, color .15s; }
+}
+</style>
+</head>
+<body>
+<header class="hero gutter">
+  <div class="inner">
+    <div>
+      <span class="eyebrow">Marking spreadsheet generator</span>
+      <h1>Test Data Sheet <em>Builder</em></h1>
+      <p class="lede">Set up a test in four steps and download a ready-to-use Excel file. It has a data entry grid, a feedback tab for every student, a class summary with grades, and peer-marking sheets. All the formulas and formatting are built in.</p>
+      <ul class="hero-points"><li>Y = full marks</li><li>One letter per mark lost</li><li>Scores, % and grades calculated</li></ul>
+    </div>
+    <div class="mock" aria-hidden="true">
+      <div class="mock-bar"><i></i><i></i><i></i><span id="mockTitle">Summary</span></div>
+      <div class="mock-grid" id="mockGrid"></div>
+      <div class="mock-tabs"><span>1</span><span>2</span><span>3</span><span>Data Entry</span><span class="on">Summary</span><span>Grads &amp; names</span></div>
+    </div>
+  </div>
+</header>
+
+<main class="inner gutter">
+  <div class="layout">
+    <form class="steps" id="form" novalidate>
+      <!-- 1 -->
+      <section class="step" id="step1">
+        <div class="step-head"><div class="num">1</div><div><h2>Name the test</h2><p>Used for the file name and printed at the top of every student feedback sheet.</p></div></div>
+        <label class="f" for="testName">Test name
+          <input type="text" id="testName" autocomplete="off" placeholder="e.g. Unit A1 Test">
+        </label>
+      </section>
+
+      <!-- 2 -->
+      <section class="step" id="step2">
+        <div class="step-head"><div class="num">2</div><div><h2>Add your students</h2><p>Each student gets a numbered feedback tab (1, 2, 3...). Adding names is optional. Without them you can type names into the <code>Grads &amp; names</code> tab later.</p></div></div>
+        <div class="grid2">
+          <div class="flabel">
+            <label for="studentCount">Number of students</label>
+            <div class="stepper">
+              <button type="button" data-step="studentCount" data-d="-1" aria-label="One fewer student">−</button>
+              <input type="number" id="studentCount" min="1" max="150" inputmode="numeric">
+              <button type="button" data-step="studentCount" data-d="1" aria-label="One more student">+</button>
+            </div>
+            <span class="hint" id="countHint">Pasting a class list sets this for you.</span>
+          </div>
+          <label class="chk" for="includeLevel"><input type="checkbox" id="includeLevel"><span>Include a level column<small>For example HL/SL, or a class group.</small></span></label>
+        </div>
+        <label class="f" for="names">Class list <small>(optional). One student per line: first name, surname, then level if you use one. You can copy the columns straight out of Excel, or use commas.</small>
+          <textarea id="names" spellcheck="false" placeholder="Asha	Crowe	HL&#10;Layla	McDermott	SL&#10;Max Sutton"></textarea>
+        </label>
+        <label class="f" for="levelHeader" id="levelHeaderWrap">Level column heading
+          <input type="text" id="levelHeader" autocomplete="off">
+        </label>
+      </section>
+
+      <!-- 3 -->
+      <section class="step" id="step3">
+        <div class="step-head"><div class="num">3</div><div><h2>Set up the questions</h2><p>List each question and how many marks it is worth. Labels can be anything, such as <code>3</code>, <code>6ai</code> or <code>Q2b</code>.</p></div></div>
+        <div class="grid2">
+          <label class="chk" for="hasMC"><input type="checkbox" id="hasMC"><span>Starts with a multiple-choice section<small>Counted as one row, MC. It's greyed out on the peer-marking sheet.</small></span></label>
+          <label class="f" for="mcMarks" id="mcWrap">Multiple-choice marks
+            <input type="number" id="mcMarks" min="1" max="200" inputmode="numeric">
+          </label>
+        </div>
+        <div class="grid2">
+          <div class="flabel">
+            <label for="qCount">Number of written questions</label>
+            <div class="stepper">
+              <button type="button" data-step="qCount" data-d="-1" aria-label="One fewer question">−</button>
+              <input type="number" id="qCount" min="0" max="60" inputmode="numeric">
+              <button type="button" data-step="qCount" data-d="1" aria-label="One more question">+</button>
+            </div>
+          </div>
+          <div class="flabel">
+            <label for="startAt">Number the first written question</label>
+            <div class="row"><input type="number" id="startAt" min="0" style="width:96px" inputmode="numeric"><button type="button" class="btn small" id="renumber">Renumber all</button></div>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table class="q">
+            <thead><tr><th>#</th><th>Label</th><th>Marks</th><th>Weighting</th><th><span hidden>Remove</span></th></tr></thead>
+            <tbody id="qBody"></tbody>
+          </table>
+        </div>
+        <div class="row" style="justify-content:space-between">
+          <div class="row"><button type="button" class="btn small" id="addQ">+ Add a question</button>
+            <span class="hint">Set every mark to</span><input type="number" id="allMarks" min="1" style="width:72px" inputmode="numeric" aria-label="Marks for every question"><button type="button" class="btn small" id="applyAll">Apply</button></div>
+          <div class="totline"><span>Total marks</span><b id="totMarks">0</b></div>
+        </div>
+      </section>
+
+      <!-- 4 -->
+      <section class="step" id="step4">
+        <div class="step-head"><div class="num">4</div><div><h2>Marking codes and grades</h2><p>When marking, type one code for full marks, or one letter for every mark lost. The spreadsheet does the maths.</p></div></div>
+        <div class="grid2">
+          <label class="f" for="fullCode">Full-marks code
+            <input type="text" id="fullCode" maxlength="3" class="fullcode">
+          </label>
+        </div>
+        <p class="subhead">Mark-lost letters</p>
+        <p class="hint" style="margin:0">Add a meaning if you'd like a feedback key printed on each student's sheet.</p>
+        <div class="codes" id="codes"></div>
+        <div><button type="button" class="btn small" id="addCode">+ Add a letter</button></div>
+
+        <details class="more" id="gradesBox">
+          <summary>Grade boundaries (percentage → grade)</summary>
+          <div style="display:grid;gap:10px">
+            <p class="hint" style="margin:0">A student gets the grade of the highest boundary they reach. You can still change these later in the Summary tab.</p>
+            <div class="scale" aria-hidden="true"></div>
+            <div class="grades" id="grades"></div>
+            <div class="row"><button type="button" class="btn small" id="addGrade">+ Add a boundary</button><button type="button" class="btn small" id="resetGrades">Use IB 1–7 defaults</button></div>
+          </div>
+        </details>
+
+        <p class="subhead">Extras</p>
+        <div class="opts">
+          <label class="chk" for="totalOnSheets"><input type="checkbox" id="totalOnSheets"><span>Total and percentage on each student's sheet</span></label>
+          <label class="chk" for="gradeOnSheets"><input type="checkbox" id="gradeOnSheets"><span>Show the grade on each student's sheet</span></label>
+          <label class="chk" for="includeReflection"><input type="checkbox" id="includeReflection"><span>Reflection Sheet<small>A printable peer-marking sheet, two copies to a page.</small></span></label>
+          <label class="chk" for="includeAnswerGuide"><input type="checkbox" id="includeAnswerGuide"><span>Answer Guide<small>Person A / Person B moderation table for the written questions.</small></span></label>
+        </div>
+      </section>
+    </form>
+
+    <aside>
+      <div class="board">
+        <h3>Your spreadsheet</h3>
+        <div class="facts">
+          <div class="fact"><b id="fStudents">0</b><span>students</span></div>
+          <div class="fact"><b id="fQs">0</b><span>questions</span></div>
+          <div class="fact"><b id="fMarks">0</b><span>total marks</span></div>
+        </div>
+        <ul class="checklist" id="checklist">
+          <li data-s="1">Test named</li><li data-s="2">Students added</li><li data-s="3">Questions and marks set</li><li data-s="4">Codes and grades ready</li>
+        </ul>
+        <ul class="issues" id="issues" hidden></ul>
+        <button type="button" class="btn primary big" id="download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>Download spreadsheet</button>
+        <p class="status" id="status" role="status" aria-live="polite">Excel file (.xlsx). Also opens in Google Sheets.</p>
+        <button type="button" class="btn small" id="resetAll" style="justify-self:start">Start again with the example</button>
+      </div>
+      <div class="xl">
+        <div class="xl-title"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3" fill="#fff" opacity=".2"/><path d="M8 8l8 8M16 8l-8 8" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg><span id="xlName">Preview: student 1 feedback tab</span></div>
+        <div class="xl-body" id="preview"></div>
+        <div class="xl-tabs" id="tabs"></div>
+        <p class="xl-note">Example marks show how codes become scores. Your file starts blank.</p>
+      </div>
+    </aside>
+  </div>
+
+  <section class="guide">
+    <h2>Using the spreadsheet after you download it</h2>
+    <ol class="guide-steps">
+      <li><b class="t">Open and enable</b><span>Open the file in Excel. It opens on the <b>Data Entry</b> tab. If Excel shows a yellow Protected View bar, click <b>Enable Editing</b> so the formulas calculate.</span></li>
+      <li><b class="t">Enter the codes</b><span>Each row is a student and each column is a question. Type <code id="gFull">Y</code> for full marks, or one letter per mark lost. Cells turn green for full marks and red if something doesn't add up.</span></li>
+      <li><b class="t">Hand back feedback</b><span>Each student's tab (<code>1</code>, <code>2</code>, <code>3</code>...) shows their codes, scores and room for comments, ready to print or share.</span></li>
+      <li><b class="t">Read the results</b><span><b>Summary</b> shows every score, percentage and grade with colour scales and class averages per question. <b>Grads &amp; names</b> counts students at each grade.</span></li>
+    </ol>
+    <div class="example" id="examples"></div>
+    <p class="foot">Need to change a question's marks after the test? Edit the <b>Out of</b> row on Data Entry and every tab updates.</p>
+  </section>
+</main>
+
+<script>
+/* Test data-sheet workbook generator.
+   buildWorkbook(cfg) -> Uint8Array (.xlsx)
+   cfg = {
+     testName, students:[{first,last,level}], studentCount,
+     questions:[{label, marks, mc}], codes:[{code, meaning}], fullCode,
+     grades:[{min, grade}], levelHeader, includeLevel,
+     totalOnSheets, gradeOnSheets, includeReflection, includeAnswerGuide,
+     sampleEntries (optional: array of arrays of strings, tests only)
+   } */
+(function (root) {
+  'use strict';
+
+  // ---------- helpers ----------
+  function colName(n) { // 1-based
+    let s = '';
+    while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); }
+    return s;
+  }
+  function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function q(name) { return "'" + String(name).replace(/'/g, "''") + "'"; } // quoted sheet name
+  function fstr(s) { return '"' + String(s).replace(/"/g, '""') + '"'; } // formula string literal
+  function isNum(v) { return typeof v === 'number' || (typeof v === 'string' && /^-?\d+(\.\d+)?$/.test(v.trim())); }
+
+  // ---------- styles ----------
+  // Fonts / fills / borders mirror the original workbook.
+  const FONT = 'Aptos Narrow';
+  const fonts = [
+    `<font><sz val="11"/><color rgb="FF000000"/><name val="${FONT}"/><family val="2"/></font>`, // 0 normal
+    `<font><b/><sz val="12"/><color rgb="FF000000"/><name val="${FONT}"/><family val="2"/></font>`, // 1 bold 12
+    `<font><b/><sz val="14"/><color rgb="FF000000"/><name val="${FONT}"/><family val="2"/></font>`, // 2 bold 14
+    `<font><sz val="18"/><color rgb="FF000000"/><name val="${FONT}"/><family val="2"/></font>`, // 3 18
+    `<font><b/><sz val="18"/><color rgb="FF000000"/><name val="${FONT}"/><family val="2"/></font>`, // 4 bold 18
+    `<font><b/><sz val="11"/><color rgb="FF000000"/><name val="${FONT}"/><family val="2"/></font>`, // 5 bold 11
+    `<font><i/><sz val="10"/><color rgb="FF595959"/><name val="${FONT}"/><family val="2"/></font>`, // 6 note
+    `<font><b/><sz val="11"/><color rgb="FF1F3864"/><name val="${FONT}"/><family val="2"/></font>` // 7 note heading
+  ];
+  const fills = [
+    '<fill><patternFill patternType="none"/></fill>',
+    '<fill><patternFill patternType="gray125"/></fill>',
+    '<fill><patternFill patternType="solid"><fgColor rgb="FFFFFF00"/><bgColor indexed="64"/></patternFill></fill>', // 2 yellow
+    '<fill><patternFill patternType="solid"><fgColor rgb="FFBFBFBF"/><bgColor indexed="64"/></patternFill></fill>', // 3 grey
+    '<fill><patternFill patternType="solid"><fgColor rgb="FFF2F2F2"/><bgColor indexed="64"/></patternFill></fill>' // 4 light header
+  ];
+  const T = '<color indexed="64"/>';
+  const borders = [
+    '<border><left/><right/><top/><bottom/><diagonal/></border>',
+    `<border><left style="thin">${T}</left><right style="thin">${T}</right><top style="thin">${T}</top><bottom style="thin">${T}</bottom><diagonal/></border>`,
+    `<border><left style="thin">${T}</left><right style="thin">${T}</right><top style="thin">${T}</top><bottom/><diagonal/></border>`,
+    `<border><left style="medium">${T}</left><right style="medium">${T}</right><top style="medium">${T}</top><bottom style="medium">${T}</bottom><diagonal/></border>`
+  ];
+  // named cell formats: [numFmtId, font, fill, border, halign, wrap, valign]
+  const XF = {
+    def:        [0, 0, 0, 0],
+    center:     [0, 0, 0, 0, 'center'],
+    thin:       [0, 0, 0, 1],
+    thinC:      [0, 0, 0, 1, 'center'],
+    thinHead:   [0, 5, 4, 1, 'center'],     // bold header w/ light fill
+    thinHeadL:  [0, 5, 4, 1],
+    thinNoBotC: [0, 0, 0, 2, 'center'],
+    bold12:     [0, 1, 0, 0],
+    bold12L:    [0, 1, 0, 0, 'left'],
+    medC:       [0, 0, 0, 3, 'center', false, 'center'],
+    med:        [0, 0, 0, 3, null, true, 'top'],
+    medHead14:  [0, 2, 0, 3],
+    medHead14C: [0, 2, 0, 3, 'center'],
+    medHead14W: [0, 2, 0, 3, 'center', true, 'center'],
+    pctThinC:   [1, 0, 0, 1, 'center'],     // "0"
+    avgThinC:   [164, 5, 4, 1, 'center'],   // "0.0" bold
+    avgPctC:    [1, 5, 4, 1, 'center'],
+    bold12MedC: [0, 1, 0, 3, 'center', false, 'center'],
+    pct2Bold12: [2, 1, 0, 3, 'center'],     // "0.00"
+    big18:      [0, 3, 0, 3, 'center', false, 'center'],
+    bold18Yel:  [0, 4, 2, 3, 'center', false, 'center'],
+    greyHead14: [0, 2, 3, 3, 'center', false, 'center'],
+    head14Mid:  [0, 2, 0, 3, 'center', false, 'center'],
+    boldC:      [0, 5, 0, 0, 'center'],
+    bold:       [0, 5, 0, 0],
+    note:       [0, 6, 0, 0],
+    noteHead:   [0, 7, 0, 0],
+    keyCode:    [0, 5, 0, 1, 'center', false, 'center'],
+    keyText:    [0, 0, 0, 1, null, true, 'center'],
+    bold12MedL: [0, 1, 0, 3, null, false, 'center'],
+    bold12C:    [0, 1, 0, 0, 'center'],
+    medL:       [0, 0, 0, 3, null, false, 'center']
+  };
+  const XF_KEYS = Object.keys(XF);
+  const S = {}; XF_KEYS.forEach((k, i) => { S[k] = i; });
+
+  function stylesXml() {
+    const xfs = XF_KEYS.map(k => {
+      const [nf, fo, fi, bo, h, w, v] = XF[k];
+      let a = `<xf numFmtId="${nf}" fontId="${fo}" fillId="${fi}" borderId="${bo}" xfId="0"` +
+        (nf ? ' applyNumberFormat="1"' : '') + (fo ? ' applyFont="1"' : '') + (fi ? ' applyFill="1"' : '') + (bo ? ' applyBorder="1"' : '');
+      if (h || w || v) {
+        a += ' applyAlignment="1"><alignment' + (h ? ` horizontal="${h}"` : '') + (v ? ` vertical="${v}"` : '') + (w ? ' wrapText="1"' : '') + '/></xf>';
+      } else a += '/>';
+      return a;
+    }).join('');
+    const dxfs =
+      '<dxf><font><color rgb="FF006100"/></font><fill><patternFill><bgColor rgb="FFC6EFCE"/></patternFill></fill></dxf>' + // 0 green
+      '<dxf><font><color rgb="FF9C0006"/></font><fill><patternFill><bgColor rgb="FFFFC7CE"/></patternFill></fill></dxf>'; // 1 red
+    return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+      '<numFmts count="1"><numFmt numFmtId="164" formatCode="0.0"/></numFmts>' +
+      `<fonts count="${fonts.length}">${fonts.join('')}</fonts>` +
+      `<fills count="${fills.length}">${fills.join('')}</fills>` +
+      `<borders count="${borders.length}">${borders.join('')}</borders>` +
+      '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+      `<cellXfs count="${XF_KEYS.length}">${xfs}</cellXfs>` +
+      '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>' +
+      `<dxfs count="2">${dxfs}</dxfs>` +
+      '</styleSheet>';
+  }
+
+  // ---------- sheet builder ----------
+  function Sheet(name) {
+    this.name = name;
+    this.rows = {};      // r -> {c -> xml}
+    this.heights = {};
+    this.cols = [];      // [min,max,width]
+    this.merges = [];
+    this.cf = [];        // raw xml
+    this.freeze = null;  // 'B3'
+    this.landscape = false;
+    this.fitWidth = false;
+    this.fitPage = false;
+    this.header = null;
+    this.autoFilter = null;
+    this.tabColor = null;
+    this.selected = false;
+  }
+  Sheet.prototype.put = function (ref, xml) {
+    const m = /^([A-Z]+)(\d+)$/.exec(ref); const r = +m[2];
+    (this.rows[r] = this.rows[r] || {})[ref] = xml;
+  };
+  // value: string | number | null ; style name
+  Sheet.prototype.v = function (ref, val, st) {
+    const s = S[st || 'def'];
+    if (val === null || val === undefined || val === '') { this.put(ref, `<c r="${ref}" s="${s}"/>`); return; }
+    if (typeof val === 'number') { this.put(ref, `<c r="${ref}" s="${s}"><v>${val}</v></c>`); return; }
+    this.put(ref, `<c r="${ref}" s="${s}" t="inlineStr"><is><t xml:space="preserve">${esc(val)}</t></is></c>`);
+  };
+  // formula with optional cached value
+  Sheet.prototype.f = function (ref, formula, st, cached) {
+    const s = S[st || 'def'];
+    const fx = `<f>${esc(formula)}</f>`;
+    if (typeof cached === 'number') this.put(ref, `<c r="${ref}" s="${s}">${fx}<v>${cached}</v></c>`);
+    else if (typeof cached === 'string') this.put(ref, `<c r="${ref}" s="${s}" t="str">${fx}<v>${esc(cached)}</v></c>`);
+    else this.put(ref, `<c r="${ref}" s="${s}">${fx}</c>`);
+  };
+  Sheet.prototype.xml = function () {
+    let x = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">';
+    if (this.tabColor || this.fitPage || this.fitWidth) {
+      x += '<sheetPr>' + (this.tabColor ? `<tabColor rgb="${this.tabColor}"/>` : '') + ((this.fitPage || this.fitWidth) ? '<pageSetUpPr fitToPage="1"/>' : '') + '</sheetPr>';
+    }
+    x += `<sheetViews><sheetView workbookViewId="0"${this.selected ? ' tabSelected="1"' : ''}>`;
+    if (this.freeze) {
+      const m = /^([A-Z]+)(\d+)$/.exec(this.freeze);
+      let colN = 0; for (const ch of m[1]) colN = colN * 26 + ch.charCodeAt(0) - 64;
+      const xs = colN - 1, ys = +m[2] - 1;
+      const pane = xs && ys ? 'bottomRight' : (ys ? 'bottomLeft' : 'topRight');
+      x += `<pane${xs ? ` xSplit="${xs}"` : ''}${ys ? ` ySplit="${ys}"` : ''} topLeftCell="${this.freeze}" activePane="${pane}" state="frozen"/>` +
+        `<selection pane="${pane}" activeCell="${this.freeze}" sqref="${this.freeze}"/>`;
+    }
+    x += '</sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/>';
+    if (this.cols.length) {
+      x += '<cols>' + this.cols.map(([a, b, w]) => `<col min="${a}" max="${b}" width="${w}" customWidth="1"/>`).join('') + '</cols>';
+    }
+    x += '<sheetData>';
+    const rs = new Set(Object.keys(this.rows).map(Number).concat(Object.keys(this.heights).map(Number)));
+    [...rs].sort((a, b) => a - b).forEach(r => {
+      const ht = this.heights[r];
+      x += `<row r="${r}"${ht ? ` ht="${ht}" customHeight="1"` : ''}>`;
+      const cells = this.rows[r] || {};
+      const refs = Object.keys(cells).sort((a, b) => {
+        const ca = a.replace(/\d+/, ''), cb = b.replace(/\d+/, '');
+        return ca.length - cb.length || (ca < cb ? -1 : ca > cb ? 1 : 0);
+      });
+      refs.forEach(k => { x += cells[k]; });
+      x += '</row>';
+    });
+    x += '</sheetData>';
+    if (this.autoFilter) x += `<autoFilter ref="${this.autoFilter}"/>`;
+    if (this.merges.length) x += `<mergeCells count="${this.merges.length}">` + this.merges.map(m => `<mergeCell ref="${m}"/>`).join('') + '</mergeCells>';
+    x += this.cf.join('');
+    x += '<pageMargins left="0.7" right="0.7" top="0.75" bottom="0.75" header="0.3" footer="0.3"/>';
+    if (this.landscape || this.fitPage || this.fitWidth) {
+      x += '<pageSetup paperSize="9"' + (this.landscape ? ' orientation="landscape"' : '') +
+        (this.fitPage ? ' fitToWidth="1" fitToHeight="1"' : (this.fitWidth ? ' fitToWidth="1" fitToHeight="0"' : '')) + '/>';
+    }
+    if (this.header) x += `<headerFooter><oddHeader>${esc(this.header)}</oddHeader></headerFooter>`;
+    x += '</worksheet>';
+    return x;
+  };
+
+  let cfPriority = 1;
+  function colorScale(sqref) {
+    return `<conditionalFormatting sqref="${sqref}"><cfRule type="colorScale" priority="${cfPriority++}"><colorScale>` +
+      '<cfvo type="min"/><cfvo type="percentile" val="50"/><cfvo type="max"/>' +
+      '<color rgb="FFF8696B"/><color rgb="FFFFEB84"/><color rgb="FF63BE7B"/></colorScale></cfRule></conditionalFormatting>';
+  }
+  function exprRule(sqref, formula, dxf, stop) {
+    return `<conditionalFormatting sqref="${sqref}"><cfRule type="expression" dxfId="${dxf}" priority="${cfPriority++}"${stop ? ' stopIfTrue="1"' : ''}><formula>${esc(formula)}</formula></cfRule></conditionalFormatting>`;
+  }
+
+  // ---------- the workbook ----------
+  function buildWorkbook(cfg) {
+    cfPriority = 1;
+    const Q = cfg.questions.map(x => ({ label: String(x.label).trim(), marks: Number(x.marks) || 0, mc: !!x.mc }));
+    const n = Q.length;
+    const N = cfg.studentCount;
+    const studs = []; for (let i = 0; i < N; i++) studs.push(cfg.students[i] || { first: '', last: '', level: '' });
+    const codes = cfg.codes.map(c => ({ code: String(c.code).trim().toUpperCase(), meaning: (c.meaning || '').trim() })).filter(c => c.code);
+    const full = (cfg.fullCode || 'Y').trim().toUpperCase();
+    const grades = cfg.grades.map(g => ({ min: Number(g.min), grade: String(g.grade).trim() }))
+      .filter(g => !isNaN(g.min) && g.grade !== '').sort((a, b) => a.min - b.min);
+    if (!grades.length || grades[0].min > 0) grades.unshift({ min: 0, grade: '' });
+    const totalMarks = Q.reduce((a, b) => a + b.marks, 0);
+    const mcMarks = Q.filter(x => x.mc).reduce((a, b) => a + b.marks, 0);
+    const testName = (cfg.testName || '').trim();
+    const labelVal = l => (isNum(l) ? Number(l) : l);
+
+    const DE = 'Data Entry', SU = 'Summary', GN = 'Grads & names', RS = 'Reflection Sheet', AG = 'Answer Guide';
+    const firstQ = 2, lastQ = n + 1;               // question columns B..
+    const LQ = colName(lastQ);
+    const sR0 = 3, sR1 = N + 2;                    // student rows 3..N+2
+
+    // Data Entry extra columns
+    const deScore = colName(lastQ + 1), dePct = colName(lastQ + 2), deGrade = colName(lastQ + 3), deNote = colName(lastQ + 5);
+    // Summary columns
+    const suScore = colName(lastQ + 1), suPct = colName(lastQ + 2), suGrade = colName(lastQ + 3);
+    const gbMin = colName(lastQ + 5), gbGrade = colName(lastQ + 6);
+    const gbR0 = 3, gbR1 = 2 + grades.length;
+    const gbRange = `$${gbMin}$${gbR0}:$${gbGrade}$${gbR1}`;
+
+    // formula for "number of valid code letters" in text expression x
+    function validCount(x) {
+      let inner = `UPPER(${x})`;
+      codes.forEach(c => { inner = `SUBSTITUTE(${inner},${fstr(c.code)},"")`; });
+      return `(LEN(${x})-LEN(${inner}))`;
+    }
+    function scoreFormula(b, d) {
+      const t = `TRIM(${b})`;
+      return `IF(${t}="","",IF(UPPER(${t})=${fstr(full)},${d},IF(${validCount(t)}=LEN(${t}),MAX(0,${d}-LEN(${t})),"")))`;
+    }
+    function gradeFor(pct) { // JS mirror for cached values / tests
+      let g = ''; grades.forEach(x => { if (pct >= x.min) g = x.grade; }); return g;
+    }
+
+    const sheets = [];
+
+    // ===== Data Entry =====
+    const de = new Sheet(DE);
+    de.tabColor = 'FF2F5597'; de.freeze = 'B3'; de.selected = true;
+    de.cols.push([1, 1, 11.5], [firstQ, lastQ, 8.86], [lastQ + 1, lastQ + 3, 9.5], [lastQ + 4, lastQ + 4, 3], [lastQ + 5, lastQ + 5, 58]);
+    de.v('A1', 'Question', 'thinHeadL');
+    de.v('A2', 'Out of', 'thinHeadL');
+    Q.forEach((qq, i) => {
+      const c = colName(firstQ + i);
+      de.v(c + '1', labelVal(qq.label), 'thinHead');
+      de.v(c + '2', qq.marks, 'thinC');
+    });
+    de.v(deScore + '1', 'Score', 'thinHead'); de.f(deScore + '2', `SUM(B2:${LQ}2)`, 'thinHead', totalMarks);
+    de.v(dePct + '1', '%', 'thinHead'); de.v(dePct + '2', 100, 'thinHead');
+    de.v(deGrade + '1', 'Grade', 'thinHead'); de.v(deGrade + '2', null, 'thinHead');
+    const sample = cfg.sampleEntries || [];
+    for (let s = 0; s < N; s++) {
+      const r = sR0 + s;
+      de.v('A' + r, s + 1, 'thinHead');
+      Q.forEach((qq, i) => {
+        const val = sample[s] && sample[s][i];
+        de.v(colName(firstQ + i) + r, val === undefined ? null : val, 'thinC');
+      });
+      de.f(deScore + r, `IF(COUNTA(B${r}:${LQ}${r})=0,"",${q(SU)}!${suScore}${r})`, 'thinC', '');
+      de.f(dePct + r, `IF(COUNTA(B${r}:${LQ}${r})=0,"",${q(SU)}!${suPct}${r})`, 'pctThinC', '');
+      de.f(deGrade + r, `IF(COUNTA(B${r}:${LQ}${r})=0,"",${q(SU)}!${suGrade}${r})`, 'thinC', '');
+    }
+    const inRange = `B${sR0}:${LQ}${sR1}`;
+    const t0 = `TRIM(B${sR0})`;
+    de.cf.push(exprRule(inRange, `UPPER(${t0})=${fstr(full)}`, 0, true));
+    de.cf.push(exprRule(inRange, `AND(${t0}<>"",OR(${validCount(t0)}<>LEN(${t0}),LEN(${t0})>B$2))`, 1, false));
+    // instructions panel
+    let nr = 1;
+    de.v(deNote + nr++, 'How to enter results', 'noteHead');
+    de.v(deNote + nr++, `${full} = full marks for that question.`, 'note');
+    de.v(deNote + nr++, `Otherwise type one letter for each mark lost: ${codes.map(c => c.code).join(', ')}. For example KK = 2 marks lost.`, 'note');
+    de.v(deNote + nr++, 'Leave a cell blank if the student did not sit the question. It shows no score.', 'note');
+    de.v(deNote + nr++, 'Green = full marks. Red = a typo, or more letters than the question is worth.', 'note');
+    if (codes.some(c => c.meaning)) {
+      nr++;
+      de.v(deNote + nr++, 'Feedback codes', 'noteHead');
+      codes.forEach(c => de.v(deNote + nr++, `${c.code} = ${c.meaning || '(no description)'}`, 'note'));
+    }
+    nr++;
+    de.v(deNote + nr++, 'Each student number has its own feedback tab (1, 2, 3...). Summary and Grads & names update automatically.', 'note');
+    sheets.push(de);
+
+    // ===== Student sheets =====
+    const studentSheets = [];
+    const hasGN = true;
+    for (let s = 0; s < N; s++) {
+      const num = s + 1, r = sR0 + s;
+      const sh = new Sheet(String(num));
+      sh.landscape = true; sh.fitWidth = true;
+      if (testName) sh.header = '&C&"-,Bold"&14' + testName.replace(/&/g, '&&');
+      sh.cols.push([1, 1, 11.71], [2, 2, 12.14], [3, 3, 9.14], [4, 4, 12.71], [5, 5, 74.86]);
+      sh.heights[1] = 16.5; sh.heights[2] = 19.5;
+      sh.v('A1', 'Student Number: ', 'bold12');
+      sh.v('D1', num, 'bold12L');
+      const st = studs[s];
+      const nm = ((st.first || '') + ' ' + (st.last || '')).trim();
+      const m = `MATCH($D$1,${q(GN)}!$C:$C,0)`;
+      sh.f('E1', `IFERROR(TRIM(INDEX(${q(GN)}!$A:$A,${m})&" "&INDEX(${q(GN)}!$B:$B,${m})),"")`, 'bold12', nm);
+      sh.v('A2', 'Question', 'medHead14');
+      sh.v('B2', 'Feedback', 'medHead14C');
+      sh.v('C2', 'Score', 'medHead14C');
+      sh.v('D2', 'Out of', 'medHead14C');
+      sh.v('E2', 'Comments (make comments about what you need to improve)', 'medHead14W');
+      Q.forEach((qq, i) => {
+        const row = 3 + i, c = colName(firstQ + i);
+        sh.heights[row] = 39.95;
+        sh.f('A' + row, `${q(DE)}!${c}$1`, 'medC', labelVal(qq.label));
+        const src = `${q(DE)}!${c}${r}`;
+        const sv = sample[s] && sample[s][i];
+        sh.f('B' + row, `IF(TRIM(${src})="","",${src})`, 'medC', sv ? String(sv) : '');
+        sh.f('C' + row, scoreFormula('B' + row, 'D' + row), 'medC', '');
+        sh.f('D' + row, `${q(DE)}!${c}$2`, 'medC', qq.marks);
+        sh.v('E' + row, null, 'med');
+      });
+      let last = 2 + n;
+      if (cfg.totalOnSheets) {
+        const tr = last + 1; sh.heights[tr] = 30;
+        sh.v('A' + tr, 'Total', 'bold12MedL');
+        sh.v('B' + tr, null, 'bold12MedC');
+        sh.f('C' + tr, `IF(COUNT(C3:C${last})=0,"",SUM(C3:C${last}))`, 'bold12MedC', '');
+        sh.f('D' + tr, `SUM(D3:D${last})`, 'bold12MedC', totalMarks);
+        const gradePart = cfg.gradeOnSheets ? `&"      Grade: "&${q(SU)}!${suGrade}${r}` : '';
+        sh.f('E' + tr, `IF(C${tr}="","","Percentage: "&TEXT(C${tr}/D${tr},"0%")${gradePart})`, 'bold12MedL', '');
+        last = tr;
+      }
+      const withMeaning = codes.filter(c => c.meaning);
+      if (withMeaning.length) {
+        let kr = last + 2;
+        sh.v('A' + kr, 'Feedback key', 'bold');
+        kr++;
+        sh.v('A' + kr, full, 'keyCode'); sh.v('B' + kr, 'Full marks', 'keyText');
+        ['C', 'D', 'E'].forEach(c => sh.v(c + kr, null, 'keyText'));
+        sh.merges.push(`B${kr}:E${kr}`); kr++;
+        withMeaning.forEach(c => {
+          sh.v('A' + kr, c.code, 'keyCode'); sh.v('B' + kr, c.meaning + ' (1 mark lost per letter)', 'keyText');
+          ['C', 'D', 'E'].forEach(cc => sh.v(cc + kr, null, 'keyText'));
+          sh.merges.push(`B${kr}:E${kr}`); kr++;
+        });
+      }
+      studentSheets.push(sh);
+    }
+
+    // ===== Summary =====
+    const su = new Sheet(SU);
+    su.tabColor = 'FF548235'; su.freeze = 'B3';
+    su.cols.push([1, 1, 11.5], [firstQ, lastQ, 9.14], [lastQ + 1, lastQ + 1, 9.14], [lastQ + 2, lastQ + 2, 11.3], [lastQ + 3, lastQ + 3, 9.14], [lastQ + 4, lastQ + 4, 3], [lastQ + 5, lastQ + 6, 11]);
+    su.v('A1', 'Question', 'thinHeadL');
+    su.v('A2', 'Out of', 'thinHeadL');
+    Q.forEach((qq, i) => {
+      const c = colName(firstQ + i);
+      su.f(c + '1', `${q(DE)}!${c}1`, 'thinHead', labelVal(qq.label));
+      su.f(c + '2', `${q(DE)}!${c}2`, 'thinC', qq.marks);
+    });
+    su.v(suScore + '1', null, 'thinHead'); su.f(suScore + '2', `SUM(B2:${LQ}2)`, 'thinHead', totalMarks);
+    su.v(suPct + '1', null, 'thinHead'); su.v(suPct + '2', 'Percentage', 'thinHead');
+    su.v(suGrade + '1', null, 'thinHead'); su.v(suGrade + '2', 'Grade', 'thinHead');
+    su.v(suScore + '1', 'Score', 'thinHead');
+    for (let s = 0; s < N; s++) {
+      const r = sR0 + s, nm = String(s + 1);
+      su.v('A' + r, s + 1, 'thinHead');
+      Q.forEach((qq, i) => su.f(colName(firstQ + i) + r, `${q(nm)}!C${3 + i}`, 'thinC', ''));
+      su.f(suScore + r, `IF(COUNT(B${r}:${LQ}${r})=0,"",SUM(B${r}:${LQ}${r}))`, 'thinC', '');
+      su.f(suPct + r, `IF(${suScore}${r}="","",${suScore}${r}/$${suScore}$2*100)`, 'pctThinC', '');
+      su.f(suGrade + r, `IF(${suPct}${r}="","",VLOOKUP(${suPct}${r},${gbRange},2,TRUE))`, 'thinC', '');
+    }
+    const avR = sR1 + 1, avP = sR1 + 2;
+    su.v('A' + avR, 'Average', 'thinHeadL');
+    su.v('A' + avP, 'Average %', 'thinHeadL');
+    for (let ci = firstQ; ci <= lastQ + 1; ci++) {
+      const c = colName(ci);
+      su.f(c + avR, `IFERROR(AVERAGE(${c}${sR0}:${c}${sR1}),"")`, 'avgThinC', '');
+      su.f(c + avP, `IFERROR(AVERAGE(${c}${sR0}:${c}${sR1})/${c}$2*100,"")`, 'avgPctC', '');
+    }
+    su.f(suPct + avR, `IFERROR(AVERAGE(${suPct}${sR0}:${suPct}${sR1}),"")`, 'avgThinC', '');
+    su.v(suPct + avP, null, 'avgPctC'); su.v(suGrade + avR, null, 'avgThinC'); su.v(suGrade + avP, null, 'avgPctC');
+    for (let ci = firstQ; ci <= lastQ + 2; ci++) {
+      const c = colName(ci); su.cf.push(colorScale(`${c}${sR0}:${c}${sR1}`));
+    }
+    su.cf.push(colorScale(`B${avP}:${colName(lastQ)}${avP}`));
+    // grade boundaries
+    su.v(gbMin + '1', 'Grade boundaries (edit to change)', 'noteHead');
+    su.v(gbMin + '2', 'From %', 'thinHead'); su.v(gbGrade + '2', 'Grade', 'thinHead');
+    grades.forEach((g, i) => {
+      su.v(gbMin + (gbR0 + i), g.min, 'thinC');
+      su.v(gbGrade + (gbR0 + i), isNum(g.grade) ? Number(g.grade) : g.grade, 'thinC');
+    });
+    su.v(gbMin + (gbR1 + 1), 'Keep the From % column in ascending order.', 'note');
+
+    // ===== Grads & names =====
+    const gn = new Sheet(GN);
+    const gcols = ['Name', 'Surname', 'Number'];
+    if (cfg.includeLevel) gcols.push(cfg.levelHeader || 'HL/SL');
+    gcols.push('Score', 'Percentage', 'Grade');
+    const gLast = colName(gcols.length);
+    const gScoreC = colName(gcols.indexOf('Score') + 1), gPctC = colName(gcols.indexOf('Percentage') + 1), gGradeC = colName(gcols.indexOf('Grade') + 1);
+    gn.cols.push([1, 2, 13], [3, 3, 9.14]);
+    if (cfg.includeLevel) gn.cols.push([4, 4, 9.14]);
+    gn.cols.push([gcols.length - 2, gcols.length - 2, 9.14], [gcols.length - 1, gcols.length - 1, 12], [gcols.length, gcols.length, 9.14]);
+    const distC = colName(gcols.length + 2), distN = colName(gcols.length + 3);
+    gn.cols.push([gcols.length + 2, gcols.length + 3, 10]);
+    gcols.forEach((h, i) => gn.v(colName(i + 1) + '1', h, i < 2 ? 'bold' : 'boldC'));
+    gn.heights[1] = 15.75;
+    const sumRange = `${q(SU)}!$A$${sR0}:$${suGrade}$${sR1}`;
+    const idxScore = lastQ + 1, idxPct = lastQ + 2, idxGrade = lastQ + 3;
+    for (let s = 0; s < N; s++) {
+      const r = 2 + s, st = studs[s];
+      gn.heights[r] = 16.5;
+      gn.v('A' + r, st.first || null, 'medL');
+      gn.v('B' + r, st.last || null, 'medL');
+      gn.v('C' + r, s + 1, 'medC');
+      if (cfg.includeLevel) gn.v('D' + r, st.level || null, 'medC');
+      gn.f(gScoreC + r, `IFERROR(VLOOKUP($C${r},${sumRange},${idxScore},FALSE),"")`, 'bold12MedC', '');
+      gn.f(gPctC + r, `IFERROR(VLOOKUP($C${r},${sumRange},${idxPct},FALSE),"")`, 'pct2Bold12', '');
+      gn.f(gGradeC + r, `IFERROR(VLOOKUP($C${r},${sumRange},${idxGrade},FALSE),"")`, 'bold12MedC', '');
+    }
+    const gR1 = N + 1;
+    gn.autoFilter = `A1:${gLast}${gR1}`;
+    gn.cf.push(colorScale(`${gScoreC}2:${gScoreC}${gR1}`));
+    gn.cf.push(colorScale(`${gPctC}2:${gPctC}${gR1}`));
+    gn.v(distC + '1', 'Grade', 'boldC'); gn.v(distN + '1', 'Students', 'boldC');
+    const desc = grades.map((g, i) => ({ g, i })).reverse();
+    desc.forEach(({ g, i }, k) => {
+      const r = 2 + k;
+      gn.f(distC + r, `${q(SU)}!${gbGrade}${gbR0 + i}`, 'thinC', isNum(g.grade) ? Number(g.grade) : g.grade);
+      gn.f(distN + r, `SUMPRODUCT(--($${gGradeC}$2:$${gGradeC}$${gR1}&""=${distC}${r}&""))`, 'thinC');
+    });
+    const dTot = 2 + desc.length;
+    gn.v(distC + dTot, 'Total', 'thinHead');
+    gn.f(distN + dTot, `SUM(${distN}2:${distN}${dTot - 1})`, 'thinHead');
+    gn.cf.push(colorScale(`${distN}2:${distN}${dTot - 1}`));
+
+    // ===== Reflection Sheet =====
+    let rs = null;
+    if (cfg.includeReflection) {
+      rs = new Sheet(RS);
+      rs.landscape = true; rs.fitPage = true;
+      if (testName) rs.header = '&C&"-,Bold"&14' + testName.replace(/&/g, '&&');
+      rs.cols.push([1, 1, 12.71], [2, 3, 11.14], [4, 4, 11.29], [5, 5, 12.71], [6, 6, 4], [7, 7, 12.71], [8, 9, 11.14], [10, 10, 11.29], [11, 11, 12.71]);
+      [['A', 'B', 'C', 'D', 'E'], ['G', 'H', 'I', 'J', 'K']].forEach(cs => {
+        const [a, b, c, d, e] = cs;
+        rs.heights[1] = 24;
+        rs.v(a + '1', 'Name:', 'bold12');
+        ['Question', 'Person A', 'Person B', 'My Score', 'Out of'].forEach((h, i) => rs.v(cs[i] + '2', h, 'head14Mid'));
+        rs.heights[2] = 21;
+        Q.forEach((qq, i) => {
+          const row = 3 + i, col = colName(firstQ + i);
+          rs.heights[row] = 30;
+          if (qq.mc) {
+            rs.f(a + row, `${q(DE)}!${col}$1`, 'head14Mid', labelVal(qq.label));
+            rs.v(b + row, null, 'greyHead14'); rs.v(c + row, null, 'greyHead14');
+            rs.v(d + row, null, 'head14Mid');
+            rs.f(e + row, `${q(DE)}!${col}$2`, 'head14Mid', qq.marks);
+          } else {
+            rs.f(a + row, `${q(DE)}!${col}$1`, 'big18', labelVal(qq.label));
+            rs.v(b + row, null, 'big18'); rs.v(c + row, null, 'big18'); rs.v(d + row, null, 'big18');
+            rs.f(e + row, `${q(DE)}!${col}$2`, 'big18', qq.marks);
+          }
+        });
+        const tr = 3 + n; rs.heights[tr] = 30;
+        const mcCells = Q.map((qq, i) => qq.mc ? `${e}${3 + i}` : null).filter(Boolean);
+        const peer = mcCells.length ? `(${e}${tr}-${mcCells.join('-')})` : `${e}${tr}`;
+        rs.v(a + tr, 'Total', 'big18');
+        rs.f(b + tr, `"/"&${peer}`, 'big18', '/' + (totalMarks - mcMarks));
+        rs.f(c + tr, `"/"&${peer}`, 'big18', '/' + (totalMarks - mcMarks));
+        rs.f(d + tr, `"/"&${e}${tr}`, 'big18', '/' + totalMarks);
+        rs.f(e + tr, `SUM(${e}3:${e}${tr - 1})`, 'big18', totalMarks);
+      });
+    }
+
+    // ===== Answer Guide =====
+    let ag = null;
+    if (cfg.includeAnswerGuide) {
+      ag = new Sheet(AG);
+      ag.fitPage = true;
+      if (testName) ag.header = '&C&"-,Bold"&14' + testName.replace(/&/g, '&&');
+      ag.cols.push([1, 1, 12.71], [2, 3, 11.14], [4, 4, 9.5], [5, 5, 3], [6, 6, 48]);
+      ag.heights[1] = 19.5;
+      ['Question', 'Person A', 'Person B', 'Out of'].forEach((h, i) => ag.v(colName(i + 1) + '1', h, 'head14Mid'));
+      const nonMc = Q.map((qq, i) => ({ qq, i })).filter(x => !x.qq.mc);
+      nonMc.forEach(({ qq, i }, k) => {
+        const row = 2 + k, col = colName(firstQ + i);
+        ag.heights[row] = 24.75;
+        ag.f('A' + row, `${q(DE)}!${col}$1`, 'big18', labelVal(qq.label));
+        ag.v('B' + row, null, 'big18'); ag.v('C' + row, null, 'big18');
+        ag.f('D' + row, `${q(DE)}!${col}$2`, 'big18', qq.marks);
+      });
+      const tr = 2 + nonMc.length; ag.heights[tr] = 24.75;
+      ag.v('A' + tr, 'Total', 'bold18Yel');
+      ['B', 'C', 'D'].forEach(c => ag.f(c + tr, `SUM(${c}2:${c}${tr - 1})`, 'bold18Yel', c === 'D' ? totalMarks - mcMarks : 0));
+      ag.v('F1', 'Peer marking: Person A and Person B each mark a sample answer, then compare against the Out of column.', 'note');
+    }
+
+    // order: student tabs, Data Entry, Summary, Grads & names, Reflection, Answer Guide
+    const ordered = studentSheets.concat([de, su, gn]).concat(rs ? [rs] : []).concat(ag ? [ag] : []);
+    const activeIdx = ordered.indexOf(de);
+
+    // ---------- package ----------
+    const files = [];
+    const add = (path, str) => files.push({ path, data: str });
+    add('[Content_Types].xml',
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+      '<Default Extension="xml" ContentType="application/xml"/>' +
+      '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+      ordered.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('') +
+      '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+      '<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>' +
+      '<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>' +
+      '</Types>');
+    add('_rels/.rels',
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+      '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>' +
+      '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>' +
+      '</Relationships>');
+    const now = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+    add('docProps/core.xml',
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' +
+      `<dc:title>${esc(testName || 'Test data sheet')}</dc:title>` +
+      `<dcterms:created xsi:type="dcterms:W3CDTF">${now}</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">${now}</dcterms:modified>` +
+      '</cp:coreProperties>');
+    add('docProps/app.xml',
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Application>Microsoft Excel</Application></Properties>');
+    let wb = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+      `<bookViews><workbookView xWindow="0" yWindow="0" windowWidth="23000" windowHeight="13000" tabRatio="800" firstSheet="${Math.max(0, activeIdx - 3)}" activeTab="${activeIdx}"/></bookViews><sheets>` +
+      ordered.map((sh, i) => `<sheet name="${esc(sh.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('') + '</sheets>';
+    const gnIdx = ordered.indexOf(gn);
+    wb += `<definedNames><definedName name="_xlnm._FilterDatabase" localSheetId="${gnIdx}" hidden="1">${esc(q(GN))}!$A$1:$${gLast}$${gR1}</definedName></definedNames>`;
+    wb += '<calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>';
+    add('xl/workbook.xml', wb);
+    add('xl/_rels/workbook.xml.rels',
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      ordered.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('') +
+      `<Relationship Id="rId${ordered.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>` +
+      '</Relationships>');
+    add('xl/styles.xml', stylesXml());
+    ordered.forEach((sh, i) => add(`xl/worksheets/sheet${i + 1}.xml`, sh.xml()));
+    return zip(files);
+  }
+
+  // ---------- minimal ZIP (store) ----------
+  const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  function crc32(b) { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+  function zip(files) {
+    const enc = new TextEncoder();
+    const parts = [], central = []; let offset = 0;
+    const d = new Date();
+    const dosTime = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+    const dosDate = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+    files.forEach(f => {
+      const name = enc.encode(f.path), data = enc.encode(f.data), crc = crc32(data);
+      const lh = new DataView(new ArrayBuffer(30));
+      lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true);
+      lh.setUint16(10, dosTime, true); lh.setUint16(12, dosDate, true); lh.setUint32(14, crc, true);
+      lh.setUint32(18, data.length, true); lh.setUint32(22, data.length, true); lh.setUint16(26, name.length, true); lh.setUint16(28, 0, true);
+      parts.push(new Uint8Array(lh.buffer), name, data);
+      const ch = new DataView(new ArrayBuffer(46));
+      ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(10, 0, true);
+      ch.setUint16(12, dosTime, true); ch.setUint16(14, dosDate, true); ch.setUint32(16, crc, true);
+      ch.setUint32(20, data.length, true); ch.setUint32(24, data.length, true); ch.setUint16(28, name.length, true);
+      ch.setUint32(42, offset, true);
+      central.push(new Uint8Array(ch.buffer), name);
+      offset += 30 + name.length + data.length;
+    });
+    const cSize = central.reduce((a, b) => a + b.length, 0);
+    const end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+    end.setUint32(12, cSize, true); end.setUint32(16, offset, true);
+    const all = parts.concat(central, [new Uint8Array(end.buffer)]);
+    const out = new Uint8Array(all.reduce((a, b) => a + b.length, 0));
+    let p = 0; all.forEach(b => { out.set(b, p); p += b.length; });
+    return out;
+  }
+
+  root.buildWorkbook = buildWorkbook;
+  if (typeof module !== 'undefined') module.exports = { buildWorkbook };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const IB = [[0,'0'],[20,'1'],[25,'1+'],[30,'2'],[35,'2+'],[40,'3'],[45,'3+'],[50,'4'],[55,'4+'],[60,'5'],[65,'5+'],[70,'6'],[75,'6+'],[80,'7'],[90,'7+']].map(([min,grade]) => ({min,grade}));
+  const EXAMPLE = () => ({
+    testName: 'Unit A1 Test', studentCount: 21, names: '', includeLevel: true, levelHeader: 'HL/SL',
+    hasMC: true, mcMarks: 10, startAt: 11,
+    questions: [2,2,2,4,5,6,6,4,4].map((m,i) => ({ label: String(11+i), marks: m })),
+    fullCode: 'Y', codes: 'DARCKS'.split('').map(c => ({ code: c, meaning: '' })),
+    grades: IB.map(g => ({...g})),
+    totalOnSheets: true, gradeOnSheets: false, includeReflection: true, includeAnswerGuide: true
+  });
+  const KEY = 'tdsb-setup-v1';
+  let st;
+  try { st = JSON.parse(localStorage.getItem(KEY)) || EXAMPLE(); } catch (e) { st = EXAMPLE(); }
+  st = Object.assign(EXAMPLE(), st);
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} }
+
+  // ---------- names ----------
+  function parseNames(txt) {
+    return txt.split(/\r?\n/).map(l => l.trim()).filter(Boolean).map(l => {
+      let parts = l.includes('\t') ? l.split('\t') : (l.includes(',') ? l.split(',') : null);
+      if (parts) parts = parts.map(s => s.trim());
+      else { const w = l.split(/\s+/); const lvl = w.length > 2 && /^(HL|SL|[A-Z]{1,3}\d?)$/.test(w[w.length-1]) ? w.pop() : ''; parts = [w.shift() || '', w.join(' '), lvl]; }
+      return { first: parts[0] || '', last: parts[1] || '', level: parts[2] || '' };
+    });
+  }
+
+  // ---------- render dynamic lists ----------
+  function renderQs() {
+    const tb = $('qBody'); tb.innerHTML = '';
+    if (st.hasMC) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="idx">MC</td><td><span class="tag">MULTIPLE CHOICE</span></td><td class="mcm">${st.mcMarks || 0}</td><td class="w"><span class="bar" data-bar="mc"></span></td><td></td>`;
+      tb.appendChild(tr);
+    }
+    st.questions.forEach((q, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="idx">${i+1}</td>
+        <td><input class="lb" type="text" id="ql${i}" value="" aria-label="Label for question ${i+1}"></td>
+        <td><input class="mk" type="number" min="1" id="qm${i}" inputmode="numeric" aria-label="Marks for question ${i+1}"></td>
+        <td class="w"><span class="bar" data-bar="${i}"></span></td>
+        <td><button type="button" class="xbtn" data-rm="${i}" aria-label="Remove question ${i+1}">×</button></td>`;
+      tr.querySelector('.lb').value = q.label;
+      tr.querySelector('.mk').value = q.marks;
+      tb.appendChild(tr);
+    });
+  }
+  function renderCodes() {
+    const box = $('codes'); box.innerHTML = '';
+    st.codes.forEach((c, i) => {
+      const d = document.createElement('div'); d.className = 'code';
+      d.innerHTML = `<input class="c" type="text" maxlength="1" id="cc${i}" aria-label="Letter ${i+1}"><input type="text" id="cm${i}" placeholder="Meaning (optional)" aria-label="Meaning of letter ${i+1}"><button type="button" class="xbtn" data-rmc="${i}" aria-label="Remove letter">×</button>`;
+      d.querySelector('.c').value = c.code; d.querySelectorAll('input')[1].value = c.meaning;
+      box.appendChild(d);
+    });
+  }
+  function renderGrades() {
+    const box = $('grades'); box.innerHTML = '';
+    st.grades.forEach((g, i) => {
+      const d = document.createElement('div'); d.className = 'g';
+      d.innerHTML = `<input type="number" id="gm${i}" min="0" max="100" aria-label="From percent" title="From %"><input type="text" id="gg${i}" aria-label="Grade" title="Grade"><button type="button" class="xbtn" data-rmg="${i}" aria-label="Remove boundary">×</button>`;
+      d.querySelectorAll('input')[0].value = g.min; d.querySelectorAll('input')[1].value = g.grade;
+      box.appendChild(d);
+    });
+  }
+  function fillStatic() {
+    $('testName').value = st.testName; $('studentCount').value = st.studentCount; $('names').value = st.names;
+    $('includeLevel').checked = st.includeLevel; $('levelHeader').value = st.levelHeader;
+    $('hasMC').checked = st.hasMC; $('mcMarks').value = st.mcMarks; $('qCount').value = st.questions.length; $('startAt').value = st.startAt;
+    $('fullCode').value = st.fullCode;
+    ['totalOnSheets','gradeOnSheets','includeReflection','includeAnswerGuide'].forEach(k => $(k).checked = st[k]);
+    renderQs(); renderCodes(); renderGrades();
+  }
+
+  // ---------- derived ----------
+  function cfgFromState() {
+    const qs = [];
+    if (st.hasMC) qs.push({ label: 'MC', marks: Number(st.mcMarks) || 0, mc: true });
+    st.questions.forEach(q => qs.push({ label: q.label, marks: Number(q.marks) || 0, mc: false }));
+    const students = parseNames(st.names);
+    return {
+      testName: st.testName, studentCount: Number(st.studentCount) || 0, students,
+      questions: qs, codes: st.codes, fullCode: st.fullCode, grades: st.grades,
+      includeLevel: st.includeLevel, levelHeader: st.levelHeader,
+      totalOnSheets: st.totalOnSheets, gradeOnSheets: st.gradeOnSheets && st.totalOnSheets,
+      includeReflection: st.includeReflection, includeAnswerGuide: st.includeAnswerGuide
+    };
+  }
+  function problems(cfg) {
+    const out = [];
+    if (!(cfg.studentCount >= 1 && cfg.studentCount <= 150)) out.push('Choose between 1 and 150 students.');
+    if (!cfg.questions.length) out.push('Add at least one question.');
+    const seen = new Set();
+    cfg.questions.forEach((q, i) => {
+      if (!String(q.label).trim()) out.push(`Question ${i + (st.hasMC ? 0 : 1)} needs a label.`);
+      else { const k = String(q.label).trim().toLowerCase(); if (seen.has(k)) out.push(`Two questions are labelled “${q.label}”. Give each a different label.`); seen.add(k); }
+      if (!(Number.isInteger(q.marks) && q.marks >= 1)) out.push(`${q.label || 'A question'} needs a whole number of marks (1 or more).`);
+    });
+    const full = (cfg.fullCode || '').trim().toUpperCase();
+    if (!full) out.push('Set a full-marks code, for example Y.');
+    const letters = cfg.codes.map(c => (c.code || '').trim().toUpperCase()).filter(Boolean);
+    if (!letters.length) out.push('Add at least one mark-lost letter.');
+    if (letters.some(l => !/^[A-Z]$/.test(l))) out.push('Mark-lost codes must be single letters A–Z.');
+    if (new Set(letters).size !== letters.length) out.push('Each mark-lost letter can only be listed once.');
+    if (full.length === 1 && letters.includes(full)) out.push(`“${full}” is the full-marks code, so it can’t also be a mark-lost letter.`);
+    if (!cfg.grades.some(g => g.grade !== '' && !isNaN(parseFloat(g.min)))) out.push('Add at least one grade boundary.');
+    return [...new Set(out)];
+  }
+
+  function esc(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  function update() {
+    const cfg = cfgFromState();
+    const total = cfg.questions.reduce((a, q) => a + (q.marks || 0), 0);
+    const names = cfg.students;
+    $('totMarks').textContent = total; $('fMarks').textContent = total;
+    $('fStudents').textContent = cfg.studentCount || 0; $('fQs').textContent = cfg.questions.length;
+    $('countHint').textContent = names.length ? `${names.length} name${names.length === 1 ? '' : 's'} found in the class list.` : 'Pasting a class list sets this for you.';
+    $('levelHeaderWrap').hidden = !st.includeLevel;
+    $('mcWrap').hidden = !st.hasMC;
+    $('gradeOnSheets').disabled = !st.totalOnSheets;
+    $('gFull').textContent = (st.fullCode || 'Y').toUpperCase();
+    // sheet tabs
+    const n = cfg.studentCount || 0, t = [];
+    const shown = n <= 5 ? n : 3;
+    for (let i = 1; i <= shown; i++) t.push(`<span${i === 1 ? ' class="on"' : ''}>${i}</span>`);
+    if (n > 5) t.push(`<span>… ${n}</span>`);
+    ['Data Entry','Summary','Grads & names'].concat(st.includeReflection ? ['Reflection Sheet'] : []).concat(st.includeAnswerGuide ? ['Answer Guide'] : [])
+      .forEach(x => t.push(`<span>${esc(x)}</span>`));
+    $('tabs').innerHTML = t.join('');
+    // weighting bars
+    const maxM = Math.max(1, ...cfg.questions.map(q => q.marks || 0));
+    document.querySelectorAll('[data-bar]').forEach(el => {
+      const k = el.dataset.bar, m = k === 'mc' ? (Number(st.mcMarks) || 0) : (Number((st.questions[+k] || {}).marks) || 0);
+      el.style.width = (m / maxM * 100) + '%';
+    });
+    // step status
+    const okS = [
+      !!String(st.testName || '').trim(),
+      cfg.studentCount >= 1 && cfg.studentCount <= 150,
+      cfg.questions.length > 0 && cfg.questions.every(q => String(q.label).trim() && Number.isInteger(q.marks) && q.marks >= 1),
+      !!(st.fullCode || '').trim() && cfg.codes.some(c => /^[A-Za-z]$/.test((c.code || '').trim()))
+    ];
+    okS.forEach((ok, i) => { $('step' + (i + 1)).classList.toggle('done', ok); document.querySelector(`#checklist [data-s="${i + 1}"]`).classList.toggle('ok', ok); });
+    // issues
+    const iss = problems(cfg);
+    $('issues').hidden = !iss.length; $('issues').innerHTML = iss.map(x => `<li>${esc(x)}</li>`).join('');
+    $('download').disabled = !!iss.length;
+    renderPreview(cfg, total);
+    renderExamples(cfg);
+    save();
+  }
+
+  function renderPreview(cfg, total) {
+    const full = (cfg.fullCode || 'Y').toUpperCase();
+    const letters = cfg.codes.map(c => (c.code || '').toUpperCase()).filter(Boolean);
+    const L = letters[letters.length - 2] || letters[0] || 'K', L2 = letters[1] || L;
+    const pattern = q => { // deterministic sample feedback
+      if (q.marks <= 2) return full;
+      if (q.marks >= 6) return L + L2;
+      return q.marks % 2 ? L : full;
+    };
+    const qs = cfg.questions.slice(0, 6);
+    let scored = 0, rows = '';
+    qs.forEach(q => {
+      const fb = pattern(q); const sc = fb === full ? q.marks : Math.max(0, q.marks - fb.length); scored += sc;
+      rows += `<tr><td class="cell-b">${esc(q.label)}</td><td class="cell-b fb${fb === full ? ' y' : ''}">${esc(fb.toLowerCase())}</td><td class="cell-b">${sc}</td><td class="cell-b">${q.marks}</td><td class="cell-b cm"></td></tr>`;
+    });
+    if (cfg.questions.length > 6) rows += `<tr class="more"><td colspan="5" class="cell-b">+ ${cfg.questions.length - 6} more question${cfg.questions.length - 6 === 1 ? '' : 's'}</td></tr>`;
+    const name = cfg.students[0] ? esc((cfg.students[0].first + ' ' + cfg.students[0].last).trim()) : '';
+    $('xlName').textContent = ((st.testName || 'Test').trim() || 'Test') + ' Data Sheet.xlsx';
+    let r = 3, body = '';
+    rows.split('</tr>').filter(x => x.trim()).forEach(tr => { body += tr.replace('<tr', '<tr data-r').replace(/<tr([^>]*)>/, (m, a) => `<tr${a.replace(' data-r', '')}><td class="rn">${r++}</td>`) + '</tr>'; });
+    $('preview').innerHTML = `<table><thead><tr><th class="cl"></th><th class="cl">A</th><th class="cl">B</th><th class="cl">C</th><th class="cl">D</th><th class="cl">E</th></tr></thead><tbody>
+      <tr class="top"><td class="rn">1</td><td colspan="3">Student Number:</td><td>1</td><td>${name}</td></tr>
+      <tr class="hdr"><td class="rn">2</td><td class="cell-b">Question</td><td class="cell-b">Feedback</td><td class="cell-b">Score</td><td class="cell-b">Out of</td><td class="cell-b">Comments</td></tr>
+      ${body}</tbody></table>`;
+  }
+  function renderExamples(cfg) {
+    const full = (cfg.fullCode || 'Y').toUpperCase();
+    const ls = cfg.codes.map(c => (c.code || '').toUpperCase()).filter(Boolean);
+    const a = ls[0] || 'K', b = ls[1] || a;
+    const ex = [[full, 4, `${full} on a 4-mark question`, '4 / 4'], [a, 4, `${a} on a 4-mark question`, '3 / 4'], [a + a + b, 6, `${a + a + b} on a 6-mark question`, '3 / 6'], ['', 4, 'Blank cell', 'no score']];
+    $('examples').innerHTML = ex.map(([c, , d, r]) => `<div class="ex${c === full ? ' full' : (c ? '' : ' blank')}">${c ? `<code>${esc(c.toLowerCase())}</code>` : '<code>&nbsp;</code>'}<span>${esc(d)}</span><b>${esc(r)}</b></div>`).join('');
+  }
+
+  // ---------- events ----------
+  const form = $('form');
+  form.addEventListener('submit', e => e.preventDefault());
+  form.addEventListener('input', e => {
+    const t = e.target, id = t.id;
+    if (/^ql\d+$/.test(id)) st.questions[+id.slice(2)].label = t.value;
+    else if (/^qm\d+$/.test(id)) st.questions[+id.slice(2)].marks = t.value === '' ? '' : Number(t.value);
+    else if (/^cc\d+$/.test(id)) { t.value = t.value.toUpperCase(); st.codes[+id.slice(2)].code = t.value; }
+    else if (/^cm\d+$/.test(id)) st.codes[+id.slice(2)].meaning = t.value;
+    else if (/^gm\d+$/.test(id)) st.grades[+id.slice(2)].min = t.value === '' ? '' : Number(t.value);
+    else if (/^gg\d+$/.test(id)) st.grades[+id.slice(2)].grade = t.value;
+    else if (id === 'names') {
+      st.names = t.value; const n = parseNames(t.value).length;
+      if (n) { st.studentCount = n; $('studentCount').value = n; }
+      if (parseNames(t.value).some(s => s.level)) { st.includeLevel = true; $('includeLevel').checked = true; }
+    }
+    else if (id === 'qCount') return; // applied on change
+    else if (id === 'hasMC') { st.hasMC = t.checked; renderQs(); }
+    else if (id === 'mcMarks') { st.mcMarks = Number(t.value); renderQs(); }
+    else if (t.type === 'checkbox' && id in st) st[id] = t.checked;
+    else if (id === 'studentCount' || id === 'startAt') st[id] = Number(t.value);
+    else if (id in st) st[id] = t.value;
+    update();
+  });
+  form.addEventListener('change', e => { if (e.target.id === 'qCount') { setQCount(Number(e.target.value)); e.target.value = st.questions.length; return; } if (e.target.type === 'checkbox' && e.target.id in st) { st[e.target.id] = e.target.checked; if (e.target.id === 'hasMC') renderQs(); update(); } });
+  form.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.step) {
+      const inp = $(b.dataset.step); const v = (Number(inp.value) || 0) + Number(b.dataset.d);
+      inp.value = Math.max(Number(inp.min) || 0, Math.min(Number(inp.max) || 999, v));
+      inp.dispatchEvent(new Event('input', { bubbles: true })); inp.dispatchEvent(new Event('change', { bubbles: true }));
+    } else if (b.dataset.rm !== undefined) { st.questions.splice(+b.dataset.rm, 1); $('qCount').value = st.questions.length; renderQs(); update(); }
+    else if (b.dataset.rmc !== undefined) { st.codes.splice(+b.dataset.rmc, 1); renderCodes(); update(); }
+    else if (b.dataset.rmg !== undefined) { st.grades.splice(+b.dataset.rmg, 1); renderGrades(); update(); }
+  });
+  function nextLabel() {
+    const last = st.questions[st.questions.length - 1];
+    if (last && /^\d+$/.test(last.label)) return String(Number(last.label) + 1);
+    return String((Number(st.startAt) || 1) + st.questions.length);
+  }
+  function setQCount(n) {
+    n = Math.max(0, Math.min(60, n || 0));
+    while (st.questions.length < n) st.questions.push({ label: nextLabel(), marks: (st.questions[st.questions.length - 1] || {}).marks || 2 });
+    st.questions.length = n; renderQs(); update();
+  }
+  $('addQ').onclick = () => { setQCount(st.questions.length + 1); $('qCount').value = st.questions.length; const el = $('ql' + (st.questions.length - 1)); el && el.focus(); };
+  $('renumber').onclick = () => { const s = Number($('startAt').value) || 1; st.startAt = s; st.questions.forEach((q, i) => q.label = String(s + i)); renderQs(); update(); };
+  $('applyAll').onclick = () => { const v = Number($('allMarks').value); if (v >= 1) { st.questions.forEach(q => q.marks = Math.round(v)); renderQs(); update(); } };
+  $('addCode').onclick = () => { st.codes.push({ code: '', meaning: '' }); renderCodes(); update(); $('cc' + (st.codes.length - 1)).focus(); };
+  $('addGrade').onclick = () => { st.grades.push({ min: '', grade: '' }); renderGrades(); update(); };
+  $('resetGrades').onclick = () => { st.grades = IB.map(g => ({...g})); renderGrades(); update(); };
+  $('resetAll').onclick = () => { st = EXAMPLE(); fillStatic(); update(); setStatus('Reset to the example setup.', ''); };
+
+  // ---------- download ----------
+  let downloadsP = null;
+  if (window.claude && typeof window.claude.use === 'function') downloadsP = window.claude.use('downloads').catch(() => null);
+  function setStatus(msg, cls) { const s = $('status'); s.textContent = msg; s.className = 'status' + (cls ? ' ' + cls : ''); }
+  function fileName() {
+    const base = (st.testName || 'Test').trim().replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, ' ') || 'Test';
+    return base + ' Data Sheet.xlsx';
+  }
+  $('download').onclick = async () => {
+    const cfg = cfgFromState();
+    if (problems(cfg).length) return;
+    let bytes;
+    try { bytes = window.buildWorkbook(cfg); }
+    catch (err) { setStatus('The spreadsheet could not be built: ' + err.message, 'err'); return; }
+    const name = fileName();
+    const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const dl = downloadsP ? await downloadsP : null;
+    if (dl) {
+      setStatus('Confirm the download to save the file…', '');
+      try { await dl.save({ filename: name, data: blob }); setStatus(`Saved “${name}”.`, 'ok'); }
+      catch (e) {
+        if (e && e.code === 'declined') setStatus('Download cancelled. Click the button again when ready.', '');
+        else if (e && e.code === 'rate_limited') setStatus('A save prompt is already open. Finish it, then try again.', '');
+        else setStatus('Downloads aren’t available in this view. Open the page in a browser to save the file.', 'err');
+      }
+      return;
+    }
+    // Fallback for when the page is hosted outside claude.ai
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    setStatus(`Downloaded “${name}”.`, 'ok');
+  };
+
+  // hero: colour-scaled summary grid (illustrative)
+  (function mock() {
+    const cols = 7, rows = 7, g = $('mockGrid'); g.style.setProperty('--cols', cols);
+    const lo = [248,105,107], mid = [255,235,132], hi = [99,190,123];
+    const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
+    const col = t => `rgb(${(t < .5 ? mix(lo, mid, t * 2) : mix(mid, hi, (t - .5) * 2)).join(',')})`;
+    const heads = ['MC', '11', '12', '13', '14', '15', 'Score'];
+    const outOf = [10, 2, 2, 4, 5, 6, 29];
+    const data = [[7,2,2,3,5,5],[8,2,1,4,4,3],[6,2,2,4,5,5],[9,2,2,4,5,6],[10,2,2,4,4,6],[3,0,1,1,2,2]];
+    let h = '<div class="h"></div>' + heads.map(x => `<div class="h">${x}</div>`).join(''), k = 0;
+    data.forEach((r, ri) => {
+      const tot = r.reduce((a, b) => a + b, 0);
+      h += `<div class="rh">${ri + 1}</div>` + r.concat([tot]).map((v, ci) => `<div class="c" style="--i:${k++};background:${col(v / outOf[ci])}">${v}</div>`).join('');
+    });
+    g.innerHTML = h;
+  })();
+
+  fillStatic(); update();
+})();
+</script>
+</body>
+</html>
